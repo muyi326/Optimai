@@ -14,6 +14,8 @@ fi
 
 PROJECT_DIR="$HOME/OptimAI-Core-Node"
 BIN_DIR="$PROJECT_DIR/bin"
+CLI_URL="https://optimai.network/download/cli-node/mac"
+CLI_FILE="$BIN_DIR/optimai-cli"
 
 echo "📁 项目目录: $PROJECT_DIR"
 echo "🖥️  系统检测: macOS $(sw_vers -productVersion)"
@@ -28,33 +30,76 @@ if ! command -v brew &> /dev/null; then
     echo ""
 fi
 
+# 0.5. 下载 optimai-cli 文件（如果不存在）
+echo ""
+echo "0.5. 下载必要文件..."
+if [ -f "$CLI_FILE" ]; then
+    echo "✅ optimai-cli 文件已存在"
+else
+    echo "📥 正在下载 optimai-cli..."
+    echo "   源: $CLI_URL"
+    echo "   目标: $CLI_FILE"
+    
+    # 确保 bin 目录存在
+    mkdir -p "$BIN_DIR"
+    
+    # 使用 curl 下载文件，显示进度
+    if curl -L -# -o "$CLI_FILE" "$CLI_URL"; then
+        echo "✅ 下载完成"
+    else
+        echo "❌ 下载失败"
+        echo "   请检查网络连接并重试"
+        echo "   或者手动下载: $CLI_URL"
+        echo "   保存到: $CLI_FILE"
+        exit 1
+    fi
+fi
+
 # 1. 验证下载的文件
 echo ""
 echo "1. 验证文件..."
-if [ -f "$BIN_DIR/optimai-cli" ]; then
-    FILE_SIZE=$(wc -c < "$BIN_DIR/optimai-cli")
+if [ -f "$CLI_FILE" ]; then
+    FILE_SIZE=$(wc -c < "$CLI_FILE")
     if [ $FILE_SIZE -gt 10000000 ]; then  # 大于10MB
         FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
         echo "✅ 文件存在且大小正常 (${FILE_SIZE_MB} MB)"
     else
         echo "⚠️  文件大小异常: $FILE_SIZE 字节"
-        echo "   文件可能不完整，请重新下载"
+        echo "   文件可能不完整，尝试重新下载..."
+        
+        # 删除可能损坏的文件并重新下载
+        rm -f "$CLI_FILE"
+        echo "🔄 重新下载 optimai-cli..."
+        if curl -L -# -o "$CLI_FILE" "$CLI_URL"; then
+            FILE_SIZE=$(wc -c < "$CLI_FILE")
+            if [ $FILE_SIZE -gt 10000000 ]; then
+                FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
+                echo "✅ 重新下载成功 (${FILE_SIZE_MB} MB)"
+            else
+                echo "❌ 重新下载后文件仍然太小"
+                echo "   请手动检查网络或联系支持"
+                exit 1
+            fi
+        else
+            echo "❌ 重新下载失败"
+            exit 1
+        fi
     fi
 else
-    echo "❌ 文件不存在: $BIN_DIR/optimai-cli"
-    echo "   请确保已经下载了 optimai-cli 文件到 bin/ 目录"
+    echo "❌ 文件不存在: $CLI_FILE"
+    echo "   即使尝试下载后文件仍然不存在"
     exit 1
 fi
 
 # 2. 设置权限
 echo ""
 echo "2. 设置权限..."
-chmod +x "$BIN_DIR/optimai-cli"
-if [ -x "$BIN_DIR/optimai-cli" ]; then
+chmod +x "$CLI_FILE"
+if [ -x "$CLI_FILE" ]; then
     echo "✅ 执行权限已设置"
     
     # 测试版本
-    echo "   版本信息: $("$BIN_DIR/optimai-cli" --version 2>/dev/null || echo "无法获取版本")"
+    echo "   版本信息: $("$CLI_FILE" --version 2>/dev/null || echo "无法获取版本")"
 else
     echo "❌ 权限设置失败"
     exit 1
@@ -829,7 +874,7 @@ echo "════════════════════════�
 # 验证所有文件
 echo "📋 验证所有文件..."
 FILES_TO_CHECK=(
-    "$BIN_DIR/optimai-cli"
+    "$CLI_FILE"
     "$PROJECT_DIR/.env"
     "$PROJECT_DIR/config/node-config.yaml"
     "$PROJECT_DIR/start.sh"
