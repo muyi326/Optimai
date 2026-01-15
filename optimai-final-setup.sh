@@ -963,9 +963,9 @@ echo "   ✅ 环境变量: .env"
 echo "   ✅ 启动脚本: start.sh"
 echo "   ✅ 详细文档: README.macOS.md"
 
-# 自动进入目录并开始登录流程
+# 自动进入目录并开始完整的启动流程
 echo ""
-echo "🚀 自动进入项目目录并开始登录流程..."
+echo "🚀 正在进入项目目录并准备启动..."
 cd "$PROJECT_DIR"
 echo "📂 当前目录: $(pwd)"
 
@@ -1004,9 +1004,17 @@ else
     echo "✅ Docker 现在运行正常"
 fi
 
-# 开始登录
+# 开始完整的自动化启动流程
 echo ""
-echo "⏳ 3秒后开始登录..."
+echo "════════════════════════════════════════════"
+echo "🤖 开始自动化启动流程"
+echo "════════════════════════════════════════════"
+
+# 第一步：登录
+echo ""
+echo "1️⃣  第一步：登录 OptimAI 账户"
+echo "════════════════════════════════════════════"
+echo "⏳ 3秒后开始登录流程..."
 sleep 3
 
 clear
@@ -1015,55 +1023,172 @@ echo "║      OptimAI 账户登录 (macOS)           ║"
 echo "║      时间: $(date '+%Y-%m-%d %H:%M:%S')            ║"
 echo "╚══════════════════════════════════════════╝"
 
-# 执行登录脚本
-./login.sh
+echo ""
+echo "📋 登录说明:"
+echo "• 需要 OptimAI 账户 (如果没有请先注册)"
+echo "• 会话会自动保存，无需重复登录"
+echo "• 登录信息存储在本地，安全加密"
+echo ""
+echo "🌐 账户准备:"
+echo "   注册地址: https://node.optimai.network/register"
+echo "   忘记密码: https://node.optimai.network/forgot-password"
+echo ""
+
+read -p "按回车键开始登录 (按 Ctrl+C 取消)..."
+
+echo ""
+echo "🔐 开始登录..."
+echo "════════════════════════════════════════════"
+
+# 确保会话目录存在
+mkdir -p "$OPTIMAI_SESSIONS"
+
+# 执行登录
+echo "正在打开浏览器进行登录..."
+"$OPTIMAI_BIN/optimai-cli" auth login
 
 LOGIN_RESULT=$?
 
-echo ""
-echo "════════════════════════════════════════════"
-
 if [ $LOGIN_RESULT -eq 0 ]; then
     echo ""
-    echo "🎉 登录成功！准备启动节点..."
-    echo ""
-    
-    # 询问是否立即启动节点
-    read -p "是否立即启动 OptimAI 节点? (y/n): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "🚀 启动 OptimAI Core Node..."
-        echo "════════════════════════════════════════════"
-        ./start.sh
-    else
-        echo ""
-        echo "📝 您可以稍后手动启动节点:"
-        echo "   启动节点: ./start.sh"
-        echo "   查看状态: ./status.sh"
-        echo "   停止节点: ./stop.sh"
-        echo ""
-        echo "💡 提示: 节点需要保持运行才能参与网络"
-    fi
+    echo "✅ 登录成功！"
+    echo "✅ 会话信息已保存到: $OPTIMAI_SESSIONS/"
 else
     echo ""
-    echo "❌ 登录失败或取消"
+    echo "❌ 登录失败"
     echo ""
-    echo "📝 您可以稍后重新登录:"
-    echo "   cd \"$(pwd)\""
-    echo "   ./login.sh"
+    echo "🔧 可能的原因:"
+    echo "   1. 账户或密码错误"
+    echo "   2. 网络连接问题"
+    echo "   3. 账户未激活或验证"
+    echo "   4. 服务器暂时不可用"
     echo ""
-    echo "🔧 故障排除:"
-    echo "   1. 确认网络连接正常"
-    echo "   2. 确认账户已注册"
-    echo "   3. 检查账户密码是否正确"
+    echo "💡 解决方案:"
+    echo "   1. 确认网络连接"
+    echo "   2. 检查账户状态"
+    echo "   3. 稍后重试"
     echo "   4. 访问: https://optimai.network/support"
+    exit 1
 fi
+
+# 第二步：启动节点
+echo ""
+echo "════════════════════════════════════════════"
+echo "2️⃣  第二步：启动 OptimAI 节点"
+echo "════════════════════════════════════════════"
+
+# 询问用户是否立即启动
+echo ""
+echo "🎯 现在可以启动 OptimAI 节点"
+echo ""
+echo "📊 节点配置:"
+echo "   名称: $(hostname)-mac-node"
+echo "   类型: Core Node"
+echo "   网络: Mainnet"
+echo "   资源: CPU 75%, 内存 4GB, 存储 50GB"
+echo ""
+echo "⚠️  注意:"
+echo "   - 节点启动后需要保持运行"
+echo "   - 可以按 Ctrl+C 停止节点"
+echo "   - 停止后可以用 ./start.sh 重新启动"
+echo ""
+
+# 提供两种选择
+echo "请选择启动方式:"
+echo "  1) 🚀 自动启动 (推荐) - 脚本将自动启动并监控节点"
+echo "  2) ⚙️  手动启动 - 稍后手动启动节点"
+echo "  3) ❌ 取消 - 退出脚本"
+echo ""
+
+while true; do
+    read -p "请选择 (1/2/3): " CHOICE
+    case $CHOICE in
+        1)
+            echo ""
+            echo "🚀 正在启动 OptimAI 节点..."
+            echo "════════════════════════════════════════════"
+            
+            # 确保日志目录存在
+            mkdir -p "$OPTIMAI_LOGS"
+            
+            # 启动节点（后台运行，但保留日志）
+            echo "正在启动 OptimAI 节点..."
+            "$OPTIMAI_BIN/optimai-cli" node start &
+            NODE_PID=$!
+            
+            echo "✅ 节点已启动 (PID: $NODE_PID)"
+            echo ""
+            
+            # 等待几秒让节点启动
+            sleep 5
+            
+            # 检查节点是否仍在运行
+            if kill -0 $NODE_PID 2>/dev/null; then
+                echo "🎉 OptimAI 节点正在运行！"
+                echo ""
+                echo "📊 节点信息:"
+                echo "   名称: $(hostname)-mac-node"
+                echo "   类型: Core Node"
+                echo "   网络: Mainnet"
+                echo "   进程 ID: $NODE_PID"
+                echo "   日志文件: $OPTIMAI_LOGS/node.log"
+                echo "   数据目录: $OPTIMAI_DATA"
+                echo ""
+                echo "📈 监控节点状态:"
+                echo "   查看日志: tail -f logs/node.log"
+                echo "   查看状态: ./status.sh"
+                echo "   停止节点: ./stop.sh"
+                echo ""
+                echo "💡 提示:"
+                echo "   - 节点会保持运行直到手动停止"
+                echo "   - 可以使用 ./stop.sh 停止节点"
+                echo "   - 节点重启后会自动恢复"
+                echo ""
+                echo "🏁 安装和启动完成！节点正在运行。"
+            else
+                echo "❌ 节点启动后异常退出"
+                echo ""
+                echo "🔧 请检查日志: tail -f logs/node.log"
+                echo "   或手动启动: ./start.sh"
+            fi
+            break
+            ;;
+        2)
+            echo ""
+            echo "⚙️  选择手动启动模式"
+            echo ""
+            echo "📝 您可以稍后手动启动节点:"
+            echo "   cd \"$PROJECT_DIR\""
+            echo "   ./start.sh"
+            echo ""
+            echo "📚 其他管理命令:"
+            echo "   ./status.sh  - 查看节点状态"
+            echo "   ./stop.sh    - 停止节点"
+            echo "   ./login.sh   - 重新登录"
+            echo ""
+            echo "🏁 安装完成！请手动启动节点。"
+            break
+            ;;
+        3)
+            echo ""
+            echo "❌ 取消启动"
+            echo ""
+            echo "📝 您可以在需要时手动启动:"
+            echo "   cd \"$PROJECT_DIR\""
+            echo "   ./start.sh"
+            exit 0
+            ;;
+        *)
+            echo "❌ 无效选择，请重新输入"
+            ;;
+    esac
+done
 
 echo ""
 echo "════════════════════════════════════════════"
 echo "🏁 安装和设置流程已完成"
 echo ""
-echo "📁 项目位置: $(pwd)"
+echo "📁 项目位置: $PROJECT_DIR"
 echo "📖 详细指南: 查看 README.macOS.md 文件"
 echo ""
 echo "🚀 常用命令:"
@@ -1072,7 +1197,9 @@ echo "   ./status.sh   # 查看状态"
 echo "   ./stop.sh     # 停止节点"
 echo "   ./login.sh    # 重新登录"
 echo ""
-echo "📞 获取帮助: https://docs.optimai.network"
-echo "👥 加入社区: https://t.me/OptimAINetwork"
+echo "📞 获取帮助:"
+echo "   📚 文档: https://docs.optimai.network"
+echo "   👥 社区: https://t.me/OptimAINetwork"
+echo "   🆘 支持: https://optimai.network/support"
 echo ""
 echo "🌈 感谢使用 OptimAI Network！祝您使用愉快！"
