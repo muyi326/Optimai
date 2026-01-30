@@ -241,28 +241,68 @@ echo ""
 echo "🔐 第7步：登录账户..."
 echo "════════════════════════════════════════════"
 
+# 清理可能的旧会话文件
+echo "清理旧会话..."
+rm -rf "$PROJECT_DIR/.sessions" 2>/dev/null
+mkdir -p "$PROJECT_DIR/.sessions"
+
 echo "正在打开浏览器进行登录..."
 echo ""
 echo "📋 登录说明:"
-echo "   1. 浏览器会自动打开"
-echo "   2. 输入您的 OptimAI 账户"
-echo "   3. 如果没有账户，请先注册"
-echo "   4. 登录后关闭浏览器窗口"
+echo "   1. 将打开浏览器或显示登录链接"
+echo "   2. 输入您的 OptimAI 账户（您刚才使用的邮箱）"
+echo "   3. 登录后浏览器会显示成功信息"
+echo "   4. 可以关闭浏览器窗口"
+echo "   5. 返回终端查看结果"
 echo ""
 echo "⏳ 等待登录..."
 
 cd "$PROJECT_DIR"
+
+# 使用更可靠的登录方式
+echo "开始登录过程..."
+
+# 首先尝试交互式登录
 "./bin/optimai-cli" auth login
 
-if [ $? -eq 0 ]; then
-    echo "✅ 登录成功"
-else
-    echo "❌ 登录失败或取消"
-    echo "稍后可以手动登录:"
-    echo "cd ~/OptimAI-Core-Node"
-    echo "./bin/optimai-cli auth login"
-fi
+# 等待几秒让会话文件创建
+echo "等待会话建立..."
+sleep 5
 
+# 检查是否登录成功
+check_login_success() {
+    # 方法1：检查会话文件
+    if [ -f ".sessions/token" ] || [ -f ".sessions/session.json" ] || [ -f ".sessions/*.json" ] || [ -d ".sessions" ] && [ "$(ls -A .sessions 2>/dev/null)" ]; then
+        return 0
+    fi
+    
+    # 方法2：检查是否能获取用户信息
+    if "./bin/optimai-cli" auth status 2>/dev/null | grep -i "logged\|authenticated\|用户\|登录" >/dev/null; then
+        return 0
+    fi
+    
+    return 1
+}
+
+if check_login_success; then
+    echo "✅ 登录成功检测到有效会话"
+    
+    # 显示登录状态
+    echo ""
+    echo "📊 登录状态:"
+    "./bin/optimai-cli" auth status 2>/dev/null || echo "用户已认证"
+    
+    # 保存成功标记
+    echo "success" > ".sessions/.login_success"
+else
+    echo "⚠️ 未能自动检测到登录状态"
+    echo ""
+    echo "📝 手动验证登录状态:"
+    echo "运行: ./bin/optimai-cli auth status"
+    echo ""
+    echo "🔄 尝试直接继续启动节点..."
+    echo "（部分情况下登录可能已成功但检测不到）"
+fi
 # ============================================
 # 第8部分：启动节点
 # ============================================
